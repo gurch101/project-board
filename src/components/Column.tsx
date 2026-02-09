@@ -9,9 +9,10 @@ interface ColumnProps {
     title: string;
     tickets: Ticket[];
     onTicketClick: (ticket: Ticket) => void;
+    onTicketDelete: (ticket: Ticket) => void;
 }
 
-const Column: React.FC<ColumnProps> = ({ id, title, tickets, onTicketClick }) => {
+const Column: React.FC<ColumnProps> = ({ id, title, tickets, onTicketClick, onTicketDelete }) => {
     const { setNodeRef } = useDroppable({ id });
 
     return (
@@ -34,6 +35,7 @@ const Column: React.FC<ColumnProps> = ({ id, title, tickets, onTicketClick }) =>
                             key={ticket.id}
                             ticket={ticket}
                             onClick={() => onTicketClick(ticket)}
+                            onDelete={() => onTicketDelete(ticket)}
                         />
                     ))}
                 </SortableContext>

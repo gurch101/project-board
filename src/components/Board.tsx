@@ -6,16 +6,18 @@ import { useKanban } from '../context/KanbanContext';
 import Column from './Column';
 import TicketCard from './TicketCard';
 import TicketDetail from './TicketDetail';
+import ConfirmationModal from './ConfirmationModal';
 import type { Ticket } from '../types';
 import { LayoutGrid, Layers, Tag as TagIcon, Plus } from 'lucide-react';
 
 type Grouping = 'status' | 'release' | 'type';
 
 const Board: React.FC = () => {
-    const { tickets, statuses, types, releases, updateTicket, addTicket } = useKanban();
+    const { tickets, statuses, types, releases, updateTicket, addTicket, deleteTicket } = useKanban();
     const [grouping, setGrouping] = useState<Grouping>('status');
     const [activeTicketId, setActiveTicketId] = useState<number | null>(null);
     const [selectedTicket, setSelectedTicket] = useState<Ticket | Partial<Ticket> | null>(null);
+    const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null);
 
     const handleCreateTicket = async () => {
         const defaultStatus = statuses[0]?.id;
@@ -29,6 +31,16 @@ const Board: React.FC = () => {
         };
 
         setSelectedTicket(draftTicket as Ticket);
+    };
+
+    const confirmDeleteTicket = async () => {
+        if (ticketToDelete) {
+            await deleteTicket(ticketToDelete.id);
+            setTicketToDelete(null);
+            if (selectedTicket && selectedTicket.id === ticketToDelete.id) {
+                setSelectedTicket(null);
+            }
+        }
     };
 
     const sensors = useSensors(
@@ -162,12 +174,13 @@ const Board: React.FC = () => {
                                 title={col.title}
                                 tickets={groupedTickets[col.id] || []}
                                 onTicketClick={setSelectedTicket}
+                                onTicketDelete={setTicketToDelete}
                             />
                         ))}
                     </div>
 
                     <DragOverlay>
-                        {activeTicket ? <TicketCard ticket={activeTicket} onClick={() => { }} /> : null}
+                        {activeTicket ? <TicketCard ticket={activeTicket} onClick={() => { }} onDelete={() => { }} /> : null}
                     </DragOverlay>
                 </DndContext>
             </div>
@@ -178,6 +191,16 @@ const Board: React.FC = () => {
                     onClose={() => setSelectedTicket(null)}
                 />
             )}
+
+            <ConfirmationModal
+                isOpen={!!ticketToDelete}
+                onClose={() => setTicketToDelete(null)}
+                onConfirm={confirmDeleteTicket}
+                title="Delete Ticket"
+                message={`Are you sure you want to delete "${ticketToDelete?.title}"? This action cannot be undone.`}
+                confirmText="Delete"
+                isDestructive
+            />
         </div>
     );
 };

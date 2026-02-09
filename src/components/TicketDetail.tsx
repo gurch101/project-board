@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import type { Ticket, Status, Type, User, Release, AuditLog } from '../types';
 import { useKanban } from '../context/KanbanContext';
-import { X, Calendar, Tag, User as UserIcon, Activity } from 'lucide-react';
+import { X, Calendar, Tag, User as UserIcon, Activity, Trash } from 'lucide-react';
 import { format } from 'date-fns';
+import ConfirmationModal from './ConfirmationModal';
 
 interface TicketDetailProps {
     ticket: Ticket | Partial<Ticket>;
@@ -10,11 +11,12 @@ interface TicketDetailProps {
 }
 
 const TicketDetail: React.FC<TicketDetailProps> = ({ ticket: initialTicket, onClose }) => {
-    const { updateTicket, addTicket, statuses, types, releases, users } = useKanban();
+    const { updateTicket, addTicket, deleteTicket, statuses, types, releases, users } = useKanban();
     const [ticket, setTicket] = useState<Partial<Ticket>>(initialTicket);
     const [title, setTitle] = useState(initialTicket.title || "");
     const [description, setDescription] = useState(initialTicket.description || "");
     const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     // If ticket has an ID, it's an existing ticket. Otherwise, it's new.
     const isNew = !ticket.id;
@@ -200,7 +202,15 @@ const TicketDetail: React.FC<TicketDetailProps> = ({ ticket: initialTicket, onCl
                                 </button>
                             </div>
                         ) : (
-                            <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 mt-auto">
+                            <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 mt-auto space-y-4">
+                                <button
+                                    onClick={() => setIsDeleteModalOpen(true)}
+                                    className="w-full flex items-center justify-center gap-2 p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors bg-transparent border border-red-200 dark:border-red-900/30"
+                                >
+                                    <Trash size={16} />
+                                    Delete Ticket
+                                </button>
+
                                 <div className="text-xs text-zinc-400">
                                     <p>Created {format(new Date(ticket.created_at || new Date()), "MMM d, yyyy")}</p>
                                     <p>Updated {format(new Date(ticket.updated_at || new Date()), "MMM d, yyyy")}</p>
@@ -210,6 +220,21 @@ const TicketDetail: React.FC<TicketDetailProps> = ({ ticket: initialTicket, onCl
                     </div>
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={async () => {
+                    if (ticket.id) {
+                        await deleteTicket(ticket.id);
+                        onClose();
+                    }
+                }}
+                title="Delete Ticket"
+                message={`Are you sure you want to delete "${ticket.title}"? This action cannot be undone.`}
+                confirmText="Delete"
+                isDestructive
+            />
         </div>
     );
 };

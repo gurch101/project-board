@@ -11,6 +11,7 @@ interface KanbanContextType {
     refreshTickets: () => Promise<void>;
     updateTicket: (id: number, updates: Partial<Ticket>) => Promise<void>;
     addTicket: (ticket: Partial<Ticket>) => Promise<Ticket | void>;
+    deleteTicket: (id: number) => Promise<void>;
 }
 
 const KanbanContext = createContext<KanbanContextType | undefined>(undefined);
@@ -102,8 +103,27 @@ export const KanbanProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const deleteTicket = async (id: number) => {
+        // Optimistic update
+        setTickets(prev => prev.filter(t => t.id !== id));
+
+        try {
+            const res = await fetch(`/api/tickets/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) {
+                // Revert on failure
+                await refreshTickets();
+            }
+        } catch (e) {
+            console.error("Failed to delete ticket", e);
+            await refreshTickets();
+        }
+    };
+
     return (
-        <KanbanContext.Provider value={{ tickets, statuses, types, releases, users, refreshTickets, updateTicket, addTicket }}>
+        <KanbanContext.Provider value={{ tickets, statuses, types, releases, users, refreshTickets, updateTicket, addTicket, deleteTicket }}>
             {children}
         </KanbanContext.Provider>
     );
